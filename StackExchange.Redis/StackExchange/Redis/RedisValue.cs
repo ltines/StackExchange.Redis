@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 #if CORE_CLR
 using System.Collections.Generic;
 using System.Reflection;
@@ -16,10 +16,6 @@ namespace StackExchange.Redis
 
         static readonly byte[] EmptyByteArr = new byte[0];
 
-        private static readonly RedisValue
-            @null = new RedisValue(0, null),
-            emptyString = new RedisValue(0, EmptyByteArr);
-
         private static readonly byte[] IntegerSentinel = new byte[0];
 
         private readonly byte[] valueBlob;
@@ -36,44 +32,32 @@ namespace StackExchange.Redis
         /// <summary>
         /// Represents the string <c>""</c>
         /// </summary>
-        public static RedisValue EmptyString { get { return emptyString; } }
+        public static RedisValue EmptyString { get; } = new RedisValue(0, EmptyByteArr);
 
         /// <summary>
         /// A null value
         /// </summary>
-        public static RedisValue Null { get { return @null; } }
+        public static RedisValue Null { get; } = new RedisValue(0, null);
 
         /// <summary>
         /// Indicates whether the value is a primitive integer
         /// </summary>
-        public bool IsInteger { get { return valueBlob == IntegerSentinel; } }
+        public bool IsInteger => valueBlob == IntegerSentinel;
 
         /// <summary>
         /// Indicates whether the value should be considered a null value
         /// </summary>
-        public bool IsNull { get { return valueBlob == null; } }
+        public bool IsNull => valueBlob == null;
 
         /// <summary>
         /// Indicates whether the value is either null or a zero-length value
         /// </summary>
-        public bool IsNullOrEmpty
-        {
-            get
-            {
-                return valueBlob == null || (valueBlob.Length == 0 && !(valueBlob == IntegerSentinel));
-            }
-        }
+        public bool IsNullOrEmpty => valueBlob == null || (valueBlob.Length == 0 && !(valueBlob == IntegerSentinel));
 
         /// <summary>
         /// Indicates whether the value is greater than zero-length
         /// </summary>
-        public bool HasValue
-        {
-            get
-            {
-                return valueBlob != null && valueBlob.Length > 0;
-            }
-        }
+        public bool HasValue => valueBlob != null && valueBlob.Length > 0;
 
         /// <summary>
         /// Indicates whether two RedisValue values are equivalent
@@ -222,17 +206,28 @@ namespace StackExchange.Redis
             result = 0;
             if (value == null || count <= 0) return false;
             checked
-            {   
-                bool neg = value[offset] == '-';
+            {
                 int max = offset + count;
-                for (int i = neg ? (offset + 1) : offset; i < max; i++)
+                if (value[offset] == '-')
                 {
-                    var b = value[i];
-                    if (b < '0' || b > '9') return false;
-                    result = (result * 10) + (b - '0');
+                    for (int i = offset + 1; i < max; i++)
+                    {
+                        var b = value[i];
+                        if (b < '0' || b > '9') return false;
+                        result = (result * 10) - (b - '0');
+                    }
+                    return true;
                 }
-                if (neg) result = -result;
-                return true;
+                else
+                {
+                    for (int i = offset; i < max; i++)
+                    {
+                        var b = value[i];
+                        if (b < '0' || b > '9') return false;
+                        result = (result * 10) + (b - '0');
+                    }
+                    return true;
+                }
             }
         }
 
@@ -285,7 +280,7 @@ namespace StackExchange.Redis
                 double thisDouble, otherDouble;
                 CompareType thisType = this.ResolveType(out thisInt64, out thisDouble),
                     otherType = other.ResolveType(out otherInt64, out otherDouble);
-            
+
                 if(thisType == CompareType.Null)
                 {
                     return otherType == CompareType.Null ? 0 : -1;
@@ -345,7 +340,7 @@ namespace StackExchange.Redis
         /// </summary>
         public static implicit operator RedisValue(int? value)
         {
-            return value == null ? @null : (RedisValue)value.GetValueOrDefault();
+            return value == null ? Null : (RedisValue)value.GetValueOrDefault();
         }
         /// <summary>
         /// Creates a new RedisValue from an Int64
@@ -359,7 +354,7 @@ namespace StackExchange.Redis
         /// </summary>
         public static implicit operator RedisValue(long? value)
         {
-            return value == null ? @null : (RedisValue)value.GetValueOrDefault();
+            return value == null ? Null : (RedisValue)value.GetValueOrDefault();
         }
         /// <summary>
         /// Creates a new RedisValue from a Double
@@ -374,7 +369,7 @@ namespace StackExchange.Redis
         /// </summary>
         public static implicit operator RedisValue(double? value)
         {
-            return value == null ? @null : (RedisValue)value.GetValueOrDefault();
+            return value == null ? Null : (RedisValue)value.GetValueOrDefault();
         }
         /// <summary>
         /// Creates a new RedisValue from a String
@@ -410,7 +405,7 @@ namespace StackExchange.Redis
         /// </summary>
         public static implicit operator RedisValue(bool? value)
         {
-            return value == null ? @null : (RedisValue)value.GetValueOrDefault();
+            return value == null ? Null : (RedisValue)value.GetValueOrDefault();
         }
         /// <summary>
         /// Converts the value to a Boolean
@@ -516,7 +511,7 @@ namespace StackExchange.Redis
             if (valueBlob == IntegerSentinel)
                 return Format.ToString(value.valueInt64);
             if (valueBlob == null) return null;
-            
+
             if (valueBlob.Length == 0) return "";
             try
             {
@@ -540,74 +535,35 @@ namespace StackExchange.Redis
             return valueBlob;
         }
 
-        TypeCode IConvertible.GetTypeCode()
-        {
-            return TypeCode.Object;
-        }
+        TypeCode IConvertible.GetTypeCode() => TypeCode.Object;
 
-        bool IConvertible.ToBoolean(IFormatProvider provider)
-        {
-            return (bool)this;
-        }
+        bool IConvertible.ToBoolean(IFormatProvider provider) => (bool)this;
 
-        byte IConvertible.ToByte(IFormatProvider provider)
-        {
-            return (byte)this;
-        }
+        byte IConvertible.ToByte(IFormatProvider provider) => (byte)this;
 
-        char IConvertible.ToChar(IFormatProvider provider)
-        {
-            return (char)this;
-        }
+        char IConvertible.ToChar(IFormatProvider provider) => (char)this;
 
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
-        {
-            return DateTime.Parse((string)this, provider);
-        }
+        DateTime IConvertible.ToDateTime(IFormatProvider provider) => DateTime.Parse((string)this, provider);
 
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
-        {
-            return (decimal)this;
-        }
+        decimal IConvertible.ToDecimal(IFormatProvider provider) => (decimal)this;
 
-        double IConvertible.ToDouble(IFormatProvider provider)
-        {
-            return (double)this;
-        }
+        double IConvertible.ToDouble(IFormatProvider provider) => (double)this;
 
-        short IConvertible.ToInt16(IFormatProvider provider)
-        {
-            return (short)this;
-        }
+        short IConvertible.ToInt16(IFormatProvider provider) => (short)this;
 
-        int IConvertible.ToInt32(IFormatProvider provider)
-        {
-            return (int)this;
-        }
+        int IConvertible.ToInt32(IFormatProvider provider) => (int)this;
 
-        long IConvertible.ToInt64(IFormatProvider provider)
-        {
-            return (long)this;
-        }
+        long IConvertible.ToInt64(IFormatProvider provider) => (long)this;
 
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
-        {
-            return (sbyte)this;
-        }
+        sbyte IConvertible.ToSByte(IFormatProvider provider) => (sbyte)this;
 
-        float IConvertible.ToSingle(IFormatProvider provider)
-        {
-            return (float)this;
-        }
+        float IConvertible.ToSingle(IFormatProvider provider) => (float)this;
 
-        string IConvertible.ToString(IFormatProvider provider)
-        {
-            return (string)this;
-        }
+        string IConvertible.ToString(IFormatProvider provider) => (string)this;
 
         object IConvertible.ToType(Type conversionType, IFormatProvider provider)
         {
-            if (conversionType== null) throw new ArgumentNullException("conversionType");
+            if (conversionType== null) throw new ArgumentNullException(nameof(conversionType));
             if (conversionType== typeof(byte[])) return (byte[])this;
             if (conversionType == typeof(RedisValue)) return this;
             switch(conversionType.GetTypeCode())
@@ -633,24 +589,15 @@ namespace StackExchange.Redis
             }
         }
 
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
-        {
-            return (ushort)this;
-        }
+        ushort IConvertible.ToUInt16(IFormatProvider provider) => (ushort)this;
 
-        uint IConvertible.ToUInt32(IFormatProvider provider)
-        {
-            return (uint)this;
-        }
+        uint IConvertible.ToUInt32(IFormatProvider provider) => (uint)this;
 
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
-        {
-            return (ulong)this;
-        }
+        ulong IConvertible.ToUInt64(IFormatProvider provider) => (ulong)this;
 
         /// <summary>
         /// Convert to a long if possible, returning true.
-        /// 
+        ///
         /// Returns false otherwise.
         /// </summary>
         public bool TryParse(out long val)
@@ -674,7 +621,7 @@ namespace StackExchange.Redis
 
         /// <summary>
         /// Convert to a int if possible, returning true.
-        /// 
+        ///
         /// Returns false otherwise.
         /// </summary>
         public bool TryParse(out int val)
@@ -692,7 +639,7 @@ namespace StackExchange.Redis
 
         /// <summary>
         /// Convert to a double if possible, returning true.
-        /// 
+        ///
         /// Returns false otherwise.
         /// </summary>
         public bool TryParse(out double val)

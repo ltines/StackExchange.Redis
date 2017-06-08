@@ -1,8 +1,10 @@
-﻿using System;
+﻿using System.Threading.Tasks;
+#if !PLAT_SAFE_CONTINUATIONS
+using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Threading.Tasks;
+#endif
 
 namespace StackExchange.Redis
 {
@@ -67,17 +69,13 @@ namespace StackExchange.Redis
 					tcs.SetResult(0);
 					if (!expectTrue || expectFalse)
 					{
-						Debug.WriteLine("IsSyncSafe reported incorrectly!");
-						Trace.WriteLine("IsSyncSafe reported incorrectly!");
 						// revert to not trusting /them
 						IsSyncSafe = null;
 					}
 				}
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				Debug.WriteLine(ex.Message);
-				Trace.WriteLine(ex.Message);
 				IsSyncSafe = null;
 			}
             if (IsSyncSafe == null)

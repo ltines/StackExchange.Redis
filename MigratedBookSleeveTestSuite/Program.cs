@@ -28,6 +28,7 @@ namespace Tests
         }
         static void Main2()
         {
+#if !CORE_CLR
             // why is this here? because some dumbass forgot to install a decent test-runner before going to the airport
             var epicFail = new List<string>();
             var testTypes = from type in typeof(Program).Assembly.GetTypes()
@@ -39,8 +40,8 @@ namespace Tests
                                 Type = type,
                                 Methods = methods,
                                 ActiveMethods = methods.Where(x => Attribute.IsDefined(x, typeof(ActiveTestAttribute))).ToArray(),
-                                Setup = methods.SingleOrDefault(x => Attribute.IsDefined(x, typeof(TestFixtureSetUpAttribute))),
-                                TearDown = methods.SingleOrDefault(x => Attribute.IsDefined(x, typeof(TestFixtureTearDownAttribute)))
+                                Setup = methods.SingleOrDefault(x => Attribute.IsDefined(x, typeof(OneTimeSetUpAttribute))),
+                                TearDown = methods.SingleOrDefault(x => Attribute.IsDefined(x, typeof(OneTimeTearDownAttribute)))
                             };
             int pass = 0, fail = 0;
 
@@ -163,6 +164,7 @@ namespace Tests
 //                BookSleeve.RedisConnectionBase.AllSyncCallbacks, BookSleeve.RedisConnectionBase.AllAsyncCallbacks);
 //#endif
 
+#endif
         }
     }
 }
@@ -170,8 +172,7 @@ namespace Tests
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
 public sealed class ActiveTestAttribute : Attribute
 {
-    private readonly int count;
-    public int Count { get { return count; } }
+    public int Count { get; }
     public ActiveTestAttribute() : this(1) { }
-    public ActiveTestAttribute(int count) { this.count = count; }
+    public ActiveTestAttribute(int count) { this.Count = count; }
 }

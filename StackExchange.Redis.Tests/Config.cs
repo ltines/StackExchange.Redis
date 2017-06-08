@@ -125,6 +125,21 @@ namespace StackExchange.Redis.Tests
         }
 
         [Test]
+        public void DefaultClientName()
+        {
+            using (var muxer = Create(allowAdmin: true))
+            {
+                Assert.AreEqual(Environment.MachineName, muxer.ClientName);
+                var conn = muxer.GetDatabase();
+                conn.Ping();
+#if DEBUG
+                var name = GetServer(muxer).ClientGetName();
+                Assert.AreEqual(Environment.MachineName, name);
+#endif
+            }
+        }
+        
+        [Test]
         public void ReadConfigWithConfigDisabled()
         {
             using (var muxer = Create(allowAdmin: true, disabledCommands: new[] { "config", "info" }))
@@ -170,7 +185,7 @@ namespace StackExchange.Redis.Tests
             {
                 Thread.Sleep(1000);
                 Debug.WriteLine("About to reconfigure.....");
-                await muxer.ConfigureAsync();
+                await muxer.ConfigureAsync().ConfigureAwait(false);
                 Debug.WriteLine("Reconfigured");
             }
         }

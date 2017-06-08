@@ -168,7 +168,7 @@ namespace StackExchange.Redis.Tests
             bool checkConnect = true, bool pause = true, string failMessage = null,
             string channelPrefix = null, bool useSharedSocketManager = true, Proxy? proxy = null)
         {
-            if(pause) Thread.Sleep(500); // get a lot of glitches when hammering new socket creations etc; pace it out a bit
+            if(pause) Thread.Sleep(250); // get a lot of glitches when hammering new socket creations etc; pace it out a bit
             string configuration = GetConfiguration();
             var config = ConfigurationOptions.Parse(configuration);
             if (disabledCommands != null && disabledCommands.Length != 0)
@@ -257,8 +257,8 @@ namespace StackExchange.Redis.Tests
 #endif
         protected static TimeSpan RunConcurrent(Action work, int threads, int timeout = 10000, [CallerMemberName] string caller = null)
         {
-            if (work == null) throw new ArgumentNullException("work");
-            if (threads < 1) throw new ArgumentOutOfRangeException("threads");
+            if (work == null) throw new ArgumentNullException(nameof(work));
+            if (threads < 1) throw new ArgumentOutOfRangeException(nameof(threads));
             if(string.IsNullOrWhiteSpace(caller)) caller = Me();
             Stopwatch watch = null;
             ManualResetEvent allDone = new ManualResetEvent(false);
@@ -308,6 +308,16 @@ namespace StackExchange.Redis.Tests
             }
 
             return watch.Elapsed;
+        }
+
+        
+        protected virtual void GetAzureCredentials(out string name, out string password)
+        {
+            var lines = File.ReadAllLines(@"d:\dev\azure.txt");
+            if (lines == null || lines.Length != 2)
+                Assert.Inconclusive("azure credentials missing");
+            name = lines[0];
+            password = lines[1];
         }
 
     }

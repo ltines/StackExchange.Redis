@@ -4,6 +4,10 @@ using System.ComponentModel;
 
 namespace StackExchange.Redis
 {
+
+
+    
+
     /// <summary>
     /// Describes a sorted-set element with the corresponding value
     /// </summary>
@@ -23,11 +27,12 @@ namespace StackExchange.Redis
         /// <summary>
         /// The unique element stored in the sorted set
         /// </summary>
-        public RedisValue Element { get { return element; } }
+        public RedisValue Element => element;
+
         /// <summary>
         /// The score against the element
         /// </summary>
-        public double Score { get { return score; } }
+        public double Score => score;
 
         /// <summary>
         /// The score against the element
@@ -89,7 +94,7 @@ namespace StackExchange.Redis
         /// </summary>
         public bool Equals(SortedSetEntry value)
         {
-            return this.score == value.score && this.element == value.element;
+            return score == value.score && element == value.element;
         }
 
         /// <summary>
@@ -97,7 +102,7 @@ namespace StackExchange.Redis
         /// </summary>
         public int CompareTo(SortedSetEntry value)
         {
-            return this.score.CompareTo(value.score);
+            return score.CompareTo(value.score);
         }
 
         /// <summary>
