@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -343,6 +344,10 @@ namespace StackExchange.Redis.KeyspaceIsolation
         {
             return Inner.PublishAsync(ToInner(channel), message, flags);
         }
+        public Task<RedisResult> ExecuteAsync(string command, params object[] args)
+            => Inner.ExecuteAsync(command, ToInner(args), CommandFlags.None);
+        public Task<RedisResult> ExecuteAsync(string command, ICollection<object> args, CommandFlags flags = CommandFlags.None)
+            => Inner.ExecuteAsync(command, ToInner(args), flags);
 
         public Task<RedisResult> ScriptEvaluateAsync(byte[] hash, RedisKey[] keys = null, RedisValue[] values = null, CommandFlags flags = CommandFlags.None)
         {
@@ -707,7 +712,33 @@ namespace StackExchange.Redis.KeyspaceIsolation
                 return ToInner(outer);
             }
         }
-
+        protected ICollection<object> ToInner(ICollection<object> args)
+        {
+            if (args != null && args.Any(x => x is RedisKey || x is RedisChannel))
+            {
+                var withPrefix = new object[args.Count];
+                int i = 0;
+                foreach(var oldArg in args)
+                {
+                    object newArg;
+                    if (oldArg is RedisKey)
+                    {
+                        newArg    = ToInner((RedisKey)oldArg);
+                    }
+                    else if (oldArg is RedisChannel)
+                    {
+                        newArg = ToInner((RedisChannel)oldArg);
+                    }
+                    else
+                    {
+                        newArg = oldArg;
+                    }
+                    withPrefix[i++] = newArg;
+                }
+                args = withPrefix;
+            }
+            return args;
+        }
         protected RedisKey[] ToInner(RedisKey[] outer)
         {
             if (outer == null || outer.Length == 0)
